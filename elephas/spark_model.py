@@ -174,8 +174,6 @@ class SparkModel(object):
         init = self._master_network.get_weights()
         parameters = rdd.context.broadcast(init)
 
-        print("////// partitions")
-        print(rdd.getNumPartitions())
         if self.mode in ['asynchronous', 'hogwild']:
             print('>>> Initialize workers')
             worker = AsynchronousSparkWorker(
