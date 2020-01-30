@@ -131,7 +131,7 @@ class SparkModel(object):
         return self._master_network.predict_classes(data)
 
     def fit(self, rdd, epochs=10, batch_size=32,
-            verbose=0, validation_split=0.1):
+            verbose=0, validation_split=0.1,data_repartition=True):
         """
         Train an elephas model on an RDD. The Keras model configuration as specified
         in the elephas model is sent to Spark workers, abd each worker will be trained
@@ -144,7 +144,7 @@ class SparkModel(object):
         :param validation_split: percentage of data set aside for validation
         """
         print('>>> Fit model')
-        if self.num_workers:
+        if self.num_workers and data_repartition:
             rdd = rdd.repartition(self.num_workers)
 
         if self.mode in ['asynchronous', 'synchronous', 'hogwild']:
@@ -174,6 +174,8 @@ class SparkModel(object):
         init = self._master_network.get_weights()
         parameters = rdd.context.broadcast(init)
 
+        print("////// partitions")
+        print(rdd.getNumPartitions())
         if self.mode in ['asynchronous', 'hogwild']:
             print('>>> Initialize workers')
             worker = AsynchronousSparkWorker(
