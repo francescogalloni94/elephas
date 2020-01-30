@@ -74,6 +74,8 @@ class ElephasEstimator(Estimator, HasCategoricalLabels, HasValidationSplit, HasK
         """
         simple_rdd = df_to_simple_rdd(df, categorical=self.get_categorical_labels(), nb_classes=self.get_nb_classes(),
                                       features_col=self.getFeaturesCol(), label_col=self.getLabelCol())
+        print("////// partitions")
+        print(simple_rdd.getNumPartitions())
         simple_rdd = simple_rdd.repartition(self.get_num_workers())
         keras_model = model_from_yaml(self.get_keras_model_config())
         metrics = self.get_metrics()
