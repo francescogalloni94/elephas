@@ -34,6 +34,7 @@ class ElephasEstimator(Estimator, HasCategoricalLabels, HasValidationSplit, HasK
     def __init__(self, **kwargs):
         super(ElephasEstimator, self).__init__()
         self.set_params(**kwargs)
+        self.data_repartition = True
 
     def get_config(self):
         return {'keras_model_config': self.get_keras_model_config(),
@@ -63,19 +64,22 @@ class ElephasEstimator(Estimator, HasCategoricalLabels, HasValidationSplit, HasK
         f.flush()
         f.close()
 
+    def set_data_repartition(self,data_repartition):
+        self.data_repartition = data_repartition
+
     @keyword_only
     def set_params(self, **kwargs):
         """Set all provided parameters, otherwise set defaults
         """
         return self._set(**kwargs)
 
-    def _fit(self, df, data_repartition=True):
+    def _fit(self, df):
         """Private fit method of the Estimator, which trains the model.
         """
         simple_rdd = df_to_simple_rdd(df, categorical=self.get_categorical_labels(), nb_classes=self.get_nb_classes(),
                                       features_col=self.getFeaturesCol(), label_col=self.getLabelCol())
 
-        if data_repartition:
+        if self.data_repartition:
             simple_rdd = simple_rdd.repartition(self.get_num_workers())
         keras_model = model_from_yaml(self.get_keras_model_config())
         metrics = self.get_metrics()
@@ -92,7 +96,7 @@ class ElephasEstimator(Estimator, HasCategoricalLabels, HasValidationSplit, HasK
                         batch_size=self.get_batch_size(),
                         verbose=self.get_verbosity(),
                         validation_split=self.get_validation_split(),
-                        data_repartition=data_repartition)
+                        data_repartition=self.data_repartition)
 
         model_weights = spark_model.master_network.get_weights()
         weights = simple_rdd.ctx.broadcast(model_weights)
