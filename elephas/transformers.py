@@ -24,23 +24,7 @@ class OntologyTransformer(Transformer):
     def transform(self, dataframe):
         return dataframe.rdd.map(self._transform).toDF()
 
-    def _transform(self, row):
-        prediction = row[self.input_column].toArray() #numpy array
-        context = row[self.context_col]
-        index = 0.0
-        if context is None:
-            index = float(self.get_index(prediction))
-        else:
-            parameters = GatewayParameters(address=self.java_gateway_address, port=self.java_gateway_port, auto_convert=True)
-            gateway = JavaGateway(gateway_parameters=parameters)
-            entry_point = gateway.entry_point
-            index = entry_point.refinePrediction(prediction.tolist(), 0, context)
-            index = float(index)
-        new_row = self.new_dataframe_row(row, self.output_column, index)
-
-        return new_row
-
-    def new_dataframe_row(old_row, column_name, column_value):
+    def new_dataframe_row(self, old_row, column_name, column_value):
         row = Row(*(old_row.__fields__ + [column_name]))(*(old_row + (column_value,)))
 
         return row
@@ -57,3 +41,22 @@ class OntologyTransformer(Transformer):
                 max_index = index
 
         return max_index
+
+    def _transform(self, row):
+        prediction = row[self.input_column].toArray() #numpy array
+        context = row[self.context_col]
+        index = 0.0
+        if context is None:
+            index = float(self.get_index(prediction))
+        else:
+            parameters = GatewayParameters(address=self.java_gateway_address, port=self.java_gateway_port, auto_convert=True)
+            gateway = JavaGateway(gateway_parameters=parameters)
+            entry_point = gateway.entry_point
+            index = entry_point.refinePrediction(prediction.tolist(), 0, context)
+            index = float(index)
+        new_row = self.new_dataframe_row(row, self.output_column, index)
+
+        return new_row
+
+
+
