@@ -25,7 +25,17 @@ class OntologyTransformer(Transformer):
         self.num_classes = num_classes
 
     def transform(self, dataframe):
-        return dataframe.rdd.map(self._transform).toDF()
+        return dataframe.rdd.mapPartition(self.partition_transform).toDF()
+
+    def partition_transform(self,iterator):
+        parameters = GatewayParameters(address=self.java_gateway_address, port=self.java_gateway_port,
+                                       auto_convert=True)
+        gateway = JavaGateway(gateway_parameters=parameters)
+        entry_point = gateway.entry_point
+        new_iterator = iterator.map(lambda row : self._transform(row, entry_point))
+        gateway.close()
+        return new_iterator
+
 
     def get_index(self, vector):
         max = 0.0
@@ -37,7 +47,7 @@ class OntologyTransformer(Transformer):
 
         return max_index
 
-    def _transform(self, row):
+    def _transform(self, row, entry_point):
         prediction = row[self.probability_vector_col].toArray() #numpy array
         context = row[self.context_col]
         correct_activity = row[self.correct_activity_col]
@@ -46,11 +56,7 @@ class OntologyTransformer(Transformer):
         if context is None:
             index = float(self.get_index(prediction))
         else:
-            parameters = GatewayParameters(address=self.java_gateway_address, port=self.java_gateway_port, auto_convert=True)
-            gateway = JavaGateway(gateway_parameters=parameters)
-            entry_point = gateway.entry_point
             index = entry_point.refinePrediction(prediction.tolist(), correct_activity, context)
-            gateway.close()
             index = float(index)
         new_row = self.new_dataframe_row(row, self.output_column, index)
 
