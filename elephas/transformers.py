@@ -26,7 +26,7 @@ class OntologyTransformer(Transformer):
 
     def _transform(self, row):
         prediction = row[self.input_column].toArray() #numpy array
-        context = str(row[self.context_col])
+        context = row[self.context_col]
         index = 0.0
         if context is None:
             index = float(self.get_index(prediction))
