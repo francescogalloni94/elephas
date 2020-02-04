@@ -32,9 +32,12 @@ class OntologyTransformer(Transformer):
                                        auto_convert=True)
         gateway = JavaGateway(gateway_parameters=parameters)
         entry_point = gateway.entry_point
-        list = iterator.toList()
-        new_iterator = list.map(lambda row: self._transform(row, entry_point)).iterator()
+        new_iterator = []
+        for item in iterator:
+            new_item = self._transform(item, entry_point)
+            new_iterator.append(new_item)
         gateway.close()
+        new_iterator = iter(new_iterator)
         return new_iterator
 
 
