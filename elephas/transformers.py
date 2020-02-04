@@ -25,7 +25,7 @@ class OntologyTransformer(Transformer):
         self.num_classes = num_classes
 
     def transform(self, dataframe):
-        return dataframe.rdd.mapPartition(self.partition_transform).toDF()
+        return dataframe.rdd.mapPartitions(self.partition_transform).toDF()
 
     def partition_transform(self,iterator):
         parameters = GatewayParameters(address=self.java_gateway_address, port=self.java_gateway_port,
