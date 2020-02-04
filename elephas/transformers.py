@@ -14,7 +14,7 @@ class Transformer(object):
 
 class OntologyTransformer(Transformer):
 
-    def __init__(self, java_gateway_address, java_gateway_port, probability_vector_col="prediction",
+    def __init__(self, java_gateway_address, java_gateway_port, num_classes, probability_vector_col="prediction",
                  correct_activity_col="label_index", context_col="context", output_col="refined_index"):
         self.probability_vector_col = probability_vector_col
         self.correct_activity_col = correct_activity_col
@@ -22,6 +22,7 @@ class OntologyTransformer(Transformer):
         self.context_col = context_col
         self.java_gateway_address = java_gateway_address
         self.java_gateway_port = java_gateway_port
+        self.num_classes = num_classes
 
     def transform(self, dataframe):
         return dataframe.rdd.map(self._transform).toDF()
@@ -35,9 +36,7 @@ class OntologyTransformer(Transformer):
         """Returns the index with the highest value or with activation threshold."""
         max = 0.0
         max_index = 0
-        for index in range(0, self.output_dimensionality):
-            if vector[index] >= self.activation_threshold:
-                return index
+        for index in range(0, self.num_classes):
             if vector[index] > max:
                 max = vector[index]
                 max_index = index
