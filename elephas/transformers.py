@@ -50,6 +50,7 @@ class OntologyTransformer(Transformer):
             gateway = JavaGateway(gateway_parameters=parameters)
             entry_point = gateway.entry_point
             index = entry_point.refinePrediction(prediction.tolist(), correct_activity, context)
+            gateway.close()
             index = float(index)
         new_row = self.new_dataframe_row(row, self.output_column, index)
 
