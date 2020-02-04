@@ -14,8 +14,10 @@ class Transformer(object):
 
 class OntologyTransformer(Transformer):
 
-    def __init__(self, java_gateway_address, java_gateway_port, input_col="prediction", context_col="context", output_col="refined_index"):
-        self.input_column = input_col
+    def __init__(self, java_gateway_address, java_gateway_port, probability_vector_col="prediction",
+                 correct_activity_col="label_index", context_col="context", output_col="refined_index"):
+        self.probability_vector_col = probability_vector_col
+        self.correct_activity_col = correct_activity_col
         self.output_column = output_col
         self.context_col = context_col
         self.java_gateway_address = java_gateway_address
@@ -32,7 +34,7 @@ class OntologyTransformer(Transformer):
     def get_index(self, vector):
         """Returns the index with the highest value or with activation threshold."""
         max = 0.0
-        max_index = self.default_index
+        max_index = 0
         for index in range(0, self.output_dimensionality):
             if vector[index] >= self.activation_threshold:
                 return index
@@ -43,8 +45,10 @@ class OntologyTransformer(Transformer):
         return max_index
 
     def _transform(self, row):
-        prediction = row[self.input_column].toArray() #numpy array
+        prediction = row[self.probability_vector_col].toArray() #numpy array
         context = row[self.context_col]
+        correct_activity = row[self.correct_activity_col]
+        correct_activity = int(correct_activity)
         index = 0.0
         if context is None:
             index = float(self.get_index(prediction))
@@ -52,7 +56,7 @@ class OntologyTransformer(Transformer):
             parameters = GatewayParameters(address=self.java_gateway_address, port=self.java_gateway_port, auto_convert=True)
             gateway = JavaGateway(gateway_parameters=parameters)
             entry_point = gateway.entry_point
-            index = entry_point.refinePrediction(prediction.tolist(), 0, context)
+            index = entry_point.refinePrediction(prediction.tolist(), correct_activity, context)
             index = float(index)
         new_row = self.new_dataframe_row(row, self.output_column, index)
 
