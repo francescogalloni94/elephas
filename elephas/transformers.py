@@ -3,13 +3,13 @@ from py4j.java_gateway import JavaGateway
 from py4j.java_gateway import GatewayParameters
 
 class Transformer(object):
-    """Interface which defines a transformer object."""
+
+    def new_dataframe_row(self, old_row, column_name, column_value):
+        row = Row(*(old_row.__fields__ + [column_name]))(*(old_row + (column_value,)))
+
+        return row
 
     def transform(self, dataframe):
-        """Transforms the dataframe into an other dataframe.
-        # Returns
-            The transformed dataframe.
-        """
         raise NotImplementedError
 
 class OntologyTransformer(Transformer):
@@ -27,13 +27,7 @@ class OntologyTransformer(Transformer):
     def transform(self, dataframe):
         return dataframe.rdd.map(self._transform).toDF()
 
-    def new_dataframe_row(self, old_row, column_name, column_value):
-        row = Row(*(old_row.__fields__ + [column_name]))(*(old_row + (column_value,)))
-
-        return row
-
     def get_index(self, vector):
-        """Returns the index with the highest value or with activation threshold."""
         max = 0.0
         max_index = 0
         for index in range(0, self.num_classes):
@@ -62,4 +56,35 @@ class OntologyTransformer(Transformer):
         return new_row
 
 
+class LabelIndexTransformer(Transformer):
+
+    def __init__(self, output_dim, input_col="prediction", output_col="prediction_index",
+                 default_index=0, activation_threshold=0.55):
+        self.input_column = input_col
+        self.output_column = output_col
+        self.output_dimensionality = output_dim
+        self.activation_threshold = activation_threshold
+        self.default_index = default_index
+
+    def get_index(self, vector):
+        max = 0.0
+        max_index = self.default_index
+        for index in range(0, self.output_dimensionality):
+            if vector[index] >= self.activation_threshold:
+                return index
+            if vector[index] > max:
+                max = vector[index]
+                max_index = index
+
+        return max_index
+
+    def _transform(self, row):
+        prediction = row[self.input_column]
+        index = float(self.get_index(prediction))
+        new_row = self.new_dataframe_row(row, self.output_column, index)
+
+        return new_row
+
+    def transform(self, dataframe):
+        return dataframe.rdd.map(self._transform).toDF()
 
