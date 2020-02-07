@@ -57,7 +57,7 @@ class OntologyTransformer(Transformer):
         correct_activity = row[self.correct_activity_col]
         correct_activity = int(correct_activity)
         index = 0.0
-        if context is None:
+        if context == "Null":
             index = float(self.get_index(prediction))
         else:
             index = entry_point.refinePrediction(prediction.tolist(), correct_activity, context)
